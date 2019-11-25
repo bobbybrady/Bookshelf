@@ -11,25 +11,26 @@ using Microsoft.AspNetCore.Identity;
 
 namespace BookShelf.Controllers
 {
-    public class AuthorsController : Controller
+    public class BooksController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public AuthorsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public BooksController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
-        // GET: Authors
+        // GET: Books
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Author.Include(a => a.User);
+            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var applicationDbContext = _context.Book.Include(b => b.Author).Include(b => b.User).Where(c => c.UserId == user.Id);
             return View(await applicationDbContext.ToListAsync());
         }
 
-        // GET: Authors/Details/5
+        // GET: Books/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -37,45 +38,48 @@ namespace BookShelf.Controllers
                 return NotFound();
             }
 
-            var author = await _context.Author
-                .Include(a => a.User)
+            var book = await _context.Book
+                .Include(b => b.Author)
+                .Include(b => b.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (author == null)
+            if (book == null)
             {
                 return NotFound();
             }
 
-            return View(author);
+            return View(book);
         }
 
-        // GET: Authors/Create
+        // GET: Books/Create
         public IActionResult Create()
         {
+            ViewData["AuthorId"] = new SelectList(_context.Author, "Id", "FirstName");
             ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id");
             return View();
         }
 
-        // POST: Authors/Create
+        // POST: Books/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,Penname,PreferredGenre,UserId")] Author author)
+        public async Task<IActionResult> Create([Bind("Id,ISBN,Title,Genre,PublishDate,AuthorId,UserId")] Book book)
         {
             ModelState.Remove("UserId");
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(HttpContext.User);
-                author.UserId = user.Id;
-                _context.Add(author);
+                book.UserId = user.Id;
+                _context.Add(book);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", author.UserId);
-            return View(author);
+            ViewData["AuthorId"] = new SelectList(_context.Author, "Id", "FirstName", book.AuthorId);
+            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", book.UserId);
+            return View(book);
         }
 
-        // GET: Authors/Edit/5
+        // GET: Books/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -83,23 +87,24 @@ namespace BookShelf.Controllers
                 return NotFound();
             }
 
-            var author = await _context.Author.FindAsync(id);
-            if (author == null)
+            var book = await _context.Book.FindAsync(id);
+            if (book == null)
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", author.UserId);
-            return View(author);
+            ViewData["AuthorId"] = new SelectList(_context.Author, "Id", "FirstName", book.AuthorId);
+            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", book.UserId);
+            return View(book);
         }
 
-        // POST: Authors/Edit/5
+        // POST: Books/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,Penname,PreferredGenre,UserId")] Author author)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,ISBN,Title,Genre,PublishDate,AuthorId,UserId")] Book book)
         {
-            if (id != author.Id)
+            if (id != book.Id)
             {
                 return NotFound();
             }
@@ -109,13 +114,13 @@ namespace BookShelf.Controllers
                 try
                 {
                     var user = await _userManager.GetUserAsync(HttpContext.User);
-                    author.UserId = user.Id;
-                    _context.Update(author);
+                    book.UserId = user.Id;
+                    _context.Update(book);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!AuthorExists(author.Id))
+                    if (!BookExists(book.Id))
                     {
                         return NotFound();
                     }
@@ -126,11 +131,12 @@ namespace BookShelf.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", author.UserId);
-            return View(author);
+            ViewData["AuthorId"] = new SelectList(_context.Author, "Id", "FirstName", book.AuthorId);
+            ViewData["UserId"] = new SelectList(_context.ApplicationUsers, "Id", "Id", book.UserId);
+            return View(book);
         }
 
-        // GET: Authors/Delete/5
+        // GET: Books/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -138,31 +144,32 @@ namespace BookShelf.Controllers
                 return NotFound();
             }
 
-            var author = await _context.Author
-                .Include(a => a.User)
+            var book = await _context.Book
+                .Include(b => b.Author)
+                .Include(b => b.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (author == null)
+            if (book == null)
             {
                 return NotFound();
             }
 
-            return View(author);
+            return View(book);
         }
 
-        // POST: Authors/Delete/5
+        // POST: Books/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var author = await _context.Author.FindAsync(id);
-            _context.Author.Remove(author);
+            var book = await _context.Book.FindAsync(id);
+            _context.Book.Remove(book);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool AuthorExists(int id)
+        private bool BookExists(int id)
         {
-            return _context.Author.Any(e => e.Id == id);
+            return _context.Book.Any(e => e.Id == id);
         }
     }
 }

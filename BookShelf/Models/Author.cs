@@ -14,16 +14,19 @@ namespace BookShelf.Models
         [Required]
         [MaxLength(25)]
         [MinLength(1)]
+        [Display(Name = "First Name")]
         public string FirstName { get; set; }
 
         [Required]
         [MaxLength(35)]
         [MinLength(1)]
+        [Display(Name = "Last Name")]
         public string LastName { get; set; }
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}";
 
         public string Penname { get; set; }
+        [Display(Name = " Preferred Genre")]
         public string PreferredGenre { get; set; }
 
         public List<Book> Books { get; set; }

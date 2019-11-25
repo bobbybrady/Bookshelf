@@ -12,14 +12,14 @@ namespace BookShelf.Models
         [Required]
         [MaxLength(13)]
         [MinLength(10)]
-        public int ISBN { get; set; }
+        public string ISBN { get; set; }
         [Required]
         public string Title { get; set; }
         [Required]
         public string Genre { get; set; }
         [Required]
+        [Display(Name = "Date Published")]
         public DateTime PublishDate { get; set; }
-        [Required]
         public Author Author { get; set; }
         [Required]
         public int AuthorId { get; set; }
